@@ -69,3 +69,9 @@ button {
 #finalScoreText {
   color: #FFD700; /* make final score text yellow */
 }
+
+/* visual glow for score when multiplier is active (matches jerrycan yellow) */
+#scoreBoard.multiplier {
+  box-shadow: 0 0 16px 6px #FFD700;
+  transition: box-shadow 0.2s ease;
+}

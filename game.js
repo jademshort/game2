@@ -1,6 +1,7 @@
 // ...existing code...
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
+const scoreBoardEl = document.getElementById('scoreBoard'); // <-- add this line
 let player = { x: 50, y: 350, width: 30, height: 30, dy: 0, gravity: 0.5, jumpPower: -10, grounded: true };
 let obstacles = [];
 let waterDrops = [];
@@ -9,6 +10,28 @@ let score = 0;
 let waterCollected = 0;
 let gameSpeed = 4;
 let gameActive = false;
+
+// added: multiplier state
+let scoreMultiplier = 1;
+let multiplierActive = false;
+const multiplierValue = 2;
+const multiplierDuration = 5000; // ms
+let multiplierExpires = 0;
+
+// added: helper to enable multiplier visual/state
+function activateMultiplier() {
+  multiplierActive = true;
+  scoreMultiplier = multiplierValue;
+  multiplierExpires = Date.now() + multiplierDuration;
+  scoreBoardEl.classList.add('multiplier');
+}
+
+// added: helper to disable multiplier
+function deactivateMultiplier() {
+  multiplierActive = false;
+  scoreMultiplier = 1;
+  scoreBoardEl.classList.remove('multiplier');
+}
 
 // added: obstacle spawn tuning variables
 let obstacleSpawnInterval = 150;        // initial frames between obstacles (~2.5s at 60fps)
@@ -142,6 +165,10 @@ function updateJerrycans() {
     // collision
     if (player.x < jc.x + jc.width && player.x + player.width > jc.x && player.y < jc.y + jc.height && player.y + player.height > jc.y) {
       waterCollected += 128; // 128 ounces = 1 gallon
+
+      // activate score multiplier for a short duration
+      activateMultiplier();
+
       jerrycans.splice(i, 1);
       i--;
     }
@@ -178,7 +205,12 @@ function gameLoop() {
   updateJerrycans();
   checkCollision();
 
-  score++;
+  // expire multiplier when time is up
+  if (multiplierActive && Date.now() > multiplierExpires) {
+    deactivateMultiplier();
+  }  
+
+  score += scoreMultiplier;
 
   // obstacle spawn using a frame counter so interval can be adjusted over time
   framesSinceLastObstacle++;
@@ -197,7 +229,7 @@ function gameLoop() {
   if (score % 100 === 0) createWaterDrop();
   if (score % 1000 === 0) createJerrycan();
 
-  document.getElementById('scoreBoard').textContent = `Score: ${score} | Water: ${waterCollected}`;
+  scoreBoardEl.textContent = `Score: ${score} | Water: ${waterCollected} oz`;
   requestAnimationFrame(gameLoop);
 }
 
