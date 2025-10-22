@@ -212,8 +212,9 @@ function gameOver() {
   gameActive = false;
   document.getElementById('gameCanvas').style.display = 'none';
   document.getElementById('gameOverScreen').style.display = 'flex';
-  const gallons = (waterCollected / 128).toFixed(2);
-  document.getElementById('finalScoreText').textContent = `You collected ${waterCollected} water!`;
+
+  document.getElementById('endScoreText').textContent = `Score: ${score}`;
+  document.getElementById('finalScoreText').textContent = `You collected ${waterCollected} ounces of water!`;
 }
 
 document.getElementById('playButton').onclick = () => {
