@@ -4,6 +4,7 @@ const ctx = canvas.getContext('2d');
 let player = { x: 50, y: 350, width: 30, height: 30, dy: 0, gravity: 0.5, jumpPower: -10, grounded: true };
 let obstacles = [];
 let waterDrops = [];
+let jerrycans = [];
 let score = 0;
 let waterCollected = 0;
 let gameSpeed = 4;
@@ -30,8 +31,57 @@ function createWaterDrop() {
   const minY = Math.max(topY + 5, 50);            // don't spawn too close to top
   const maxY = groundY - 10;                     // don't spawn below the ground
 
-  const y = Math.random() * (maxY - minY) + minY;
-  waterDrops.push({ x: canvas.width, y, radius: 8 });
+  let y = Math.random() * (maxY - minY) + minY;
+
+  // spawn items slightly ahead so they don't sit exactly where new obstacles spawn
+  let x = canvas.width + 80 + Math.random() * 80;
+
+  // if any existing obstacle would overlap this x, push the item further right until clear
+  for (let i = 0; i < obstacles.length; i++) {
+    const obs = obstacles[i];
+    const buffer = 10;
+    if (Math.abs(obs.x - x) < obs.width + buffer) {
+      x = obs.x + obs.width + 40;
+    }
+  }
+  // ensure the drop isn't exactly sitting on top of an obstacle at that x; if it would, move it slightly up
+  for (let i = 0; i < obstacles.length; i++) {
+    const obs = obstacles[i];
+    if (x >= obs.x && x <= obs.x + obs.width) {
+      // move drop above the obstacle top (but not too high)
+      y = Math.min(y, obs.y - 12);
+      y = Math.max(y, 40);
+    }
+  }
+
+  waterDrops.push({ x, y, radius: 8 });
+}
+function createJerrycan() {
+    const width = 20;
+    const height = 28;
+
+  // default near-ground spawn
+  let x = canvas.width + 100 + Math.random() * 120;
+  let y = canvas.height - height - 10;
+
+  // avoid spawning directly where obstacles are; push right if overlapping
+  for (let i = 0; i < obstacles.length; i++) {
+    const obs = obstacles[i];
+    const buffer = 20;
+    if (Math.abs(obs.x - x) < obs.width + buffer) {
+      x = obs.x + obs.width + 60;
+    }
+  }
+
+  // if spawn x would still land on an obstacle horizontally, try to place the jerrycan slightly above the obstacle top
+  for (let i = 0; i < obstacles.length; i++) {
+    const obs = obstacles[i];
+    if (x >= obs.x && x <= obs.x + obs.width) {
+      y = Math.max(30, obs.y - height - 6); // ensure not too high
+    }
+  }
+
+  jerrycans.push({ x, y, width, height });
 }
 
 function updateObstacles() {
@@ -53,10 +103,39 @@ function updateWaterDrops() {
     ctx.arc(drop.x, drop.y, drop.radius, 0, Math.PI * 2);
     ctx.fill();
 
-    if (drop.x < 0) waterDrops.splice(i, 1);
-    if (drop.x < player.x + player.width && drop.x + drop.radius > player.x && drop.y > player.y && drop.y < player.y + player.height) {
-      waterCollected++;
+    if (drop.x < 0) {
       waterDrops.splice(i, 1);
+      i--;
+      continue;
+    }
+
+    // collision (droplet -> 8 ounces)
+    if (drop.x < player.x + player.width && drop.x + drop.radius > player.x && drop.y > player.y && drop.y < player.y + player.height) {
+      waterCollected += 8; // 8 ounces per droplet
+      waterDrops.splice(i, 1);
+      i--;
+    }
+  }
+}
+
+function updateJerrycans() {
+  for (let i = 0; i < jerrycans.length; i++) {
+    let jc = jerrycans[i];
+    jc.x -= gameSpeed;
+    ctx.fillStyle = 'gold'; // yellow placeholder for charity: water jerrycan
+    ctx.fillRect(jc.x, jc.y, jc.width, jc.height);
+
+    if (jc.x + jc.width < 0) {
+      jerrycans.splice(i, 1);
+      i--;
+      continue;
+    }
+
+    // collision
+    if (player.x < jc.x + jc.width && player.x + player.width > jc.x && player.y < jc.y + jc.height && player.y + player.height > jc.y) {
+      waterCollected += 128; // 128 ounces = 1 gallon
+      jerrycans.splice(i, 1);
+      i--;
     }
   }
 }
@@ -88,11 +167,13 @@ function gameLoop() {
   updatePlayer();
   updateObstacles();
   updateWaterDrops();
+  updateJerrycans();
   checkCollision();
 
   score++;
   if (score % 150 === 0) createObstacle();
   if (score % 100 === 0) createWaterDrop();
+  if (score % 1000 === 0) createJerrycan();
 
   document.getElementById('scoreBoard').textContent = `Score: ${score} | Water: ${waterCollected}`;
   requestAnimationFrame(gameLoop);
@@ -109,6 +190,7 @@ function gameOver() {
   gameActive = false;
   document.getElementById('gameCanvas').style.display = 'none';
   document.getElementById('gameOverScreen').style.display = 'flex';
+  const gallons = (waterCollected / 128).toFixed(2);
   document.getElementById('finalScoreText').textContent = `You collected ${waterCollected} water!`;
 }
 
@@ -130,6 +212,7 @@ function startGame() {
   waterCollected = 0;
   obstacles = [];
   waterDrops = [];
+  jerrycans = [];
   gameActive = true;
   gameLoop();
 }
