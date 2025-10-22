@@ -53,4 +53,19 @@ button {
   padding: 5px 10px;
   border-radius: 5px;
 }
+
+/* make the "Score: ___" on the game over screen bold */
+#endScoreText {
+  font-weight: 700;
+}
 /* ...existing code... */
+
+/* yellow note on the game over screen only */
+#gameOverNote {
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+#finalScoreText {
+  color: #FFD700; /* make final score text yellow */
+}
