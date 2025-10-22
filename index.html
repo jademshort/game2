@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Water Walk</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+
+    #gameCanvas {
+      display: none;
+      background-color: #87ceeb;
+      width: 100%;
+      height: 400px;
+      border-top: 5px solid #222;
+    }
+
+    #startScreen, #gameOverScreen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background-color: #111;
+    }
+
+    .title {
+      font-size: 3em;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      font-size: 1.5em;
+      margin-bottom: 20px;
+      color: #999;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 1em;
+      cursor: pointer;
+      background-color: #ddd;
+      border: none;
+      border-radius: 5px;
+    }
+
+    #scoreBoard {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 1.2em;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 5px 10px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Start Screen -->
+  <div id="startScreen">
+    <div class="title">Water Walk</div>
+    <div class="subtitle">a game about the struggle for clean water</div>
+    <button id="playButton">Play</button>
+    <p style="margin-top: 20px; color: #777;">learn more at charitywater.org</p>
+  </div>
+
+  <!-- Game Canvas -->
+  <div id="gameCanvas">
+    <div id="scoreBoard">Score: 0 | Water: 0</div>
+    <canvas id="game" width="800" height="400"></canvas>
+  </div>
+
+  <!-- Game Over Screen -->
+  <div id="gameOverScreen" style="display:none;">
+    <h1>Game Over</h1>
+    <p id="finalScoreText"></p>
+    <p>For millions of people, this walk isn't just a game. It's a daily struggle.</p>
+    <p>Learn how you can help at <a href="https://charitywater.org" target="_blank" style="color: #4fc3f7;">charitywater.org</a></p>
+    <button id="replayButton">Replay</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    let player = { x: 50, y: 350, width: 30, height: 30, dy: 0, gravity: 0.5, jumpPower: -10, grounded: true };
+    let obstacles = [];
+    let waterDrops = [];
+    let score = 0;
+    let waterCollected = 0;
+    let gameSpeed = 4;
+    let gameActive = false;
+
+    function drawPlayer() {
+      ctx.fillStyle = 'black';
+      ctx.fillRect(player.x, player.y, player.width, player.height);
+    }
+
+    function createObstacle() {
+      let height = 30;
+      obstacles.push({ x: canvas.width, y: canvas.height - height, width: 20, height });
+    }
+
+    function createWaterDrop() {
+      let y = Math.random() * 200 + 150;
+      waterDrops.push({ x: canvas.width, y, radius: 8 });
+    }
+
+    function updateObstacles() {
+      for (let i = 0; i < obstacles.length; i++) {
+        let obs = obstacles[i];
+        obs.x -= gameSpeed;
+        ctx.fillStyle = 'gray';
+        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+        if (obs.x + obs.width < 0) obstacles.splice(i, 1);
+      }
+    }
+
+    function updateWaterDrops() {
+      for (let i = 0; i < waterDrops.length; i++) {
+        let drop = waterDrops[i];
+        drop.x -= gameSpeed;
+        ctx.fillStyle = 'aqua';
+        ctx.beginPath();
+        ctx.arc(drop.x, drop.y, drop.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (drop.x < 0) waterDrops.splice(i, 1);
+        if (drop.x < player.x + player.width && drop.x + drop.radius > player.x && drop.y > player.y && drop.y < player.y + player.height) {
+          waterCollected++;
+          waterDrops.splice(i, 1);
+        }
+      }
+    }
+
+    function updatePlayer() {
+      player.y += player.dy;
+      if (player.y + player.height >= canvas.height) {
+        player.y = canvas.height - player.height;
+        player.dy = 0;
+        player.grounded = true;
+      } else {
+        player.dy += player.gravity;
+      }
+    }
+
+    function checkCollision() {
+      for (let obs of obstacles) {
+        if (player.x < obs.x + obs.width && player.x + player.width > obs.x && player.y + player.height > obs.y) {
+          gameOver();
+        }
+      }
+    }
+
+    function gameLoop() {
+      if (!gameActive) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawPlayer();
+      updatePlayer();
+      updateObstacles();
+      updateWaterDrops();
+      checkCollision();
+
+      score++;
+      if (score % 150 === 0) createObstacle();
+      if (score % 100 === 0) createWaterDrop();
+
+      document.getElementById('scoreBoard').textContent = `Score: ${score} | Water: ${waterCollected}`;
+      requestAnimationFrame(gameLoop);
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.code === 'Space' && player.grounded) {
+        player.dy = player.jumpPower;
+        player.grounded = false;
+      }
+    });
+
+    function gameOver() {
+      gameActive = false;
+      document.getElementById('gameCanvas').style.display = 'none';
+      document.getElementById('gameOverScreen').style.display = 'flex';
+      document.getElementById('finalScoreText').textContent = `You collected ${waterCollected} water!`;
+    }
+
+    document.getElementById('playButton').onclick = () => {
+      document.getElementById('startScreen').style.display = 'none';
+      document.getElementById('gameCanvas').style.display = 'block';
+      startGame();
+    };
+
+    document.getElementById('replayButton').onclick = () => {
+      document.getElementById('gameOverScreen').style.display = 'none';
+      document.getElementById('gameCanvas').style.display = 'block';
+      startGame();
+    };
+
+    function startGame() {
+      player.y = 350;
+      score = 0;
+      waterCollected = 0;
+      obstacles = [];
+      waterDrops = [];
+      gameActive = true;
+      gameLoop();
+    }
+  </script>
+</body>
+</html>
