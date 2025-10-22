@@ -10,6 +10,14 @@ let waterCollected = 0;
 let gameSpeed = 4;
 let gameActive = false;
 
+// added: obstacle spawn tuning variables
+let obstacleSpawnInterval = 150;        // initial frames between obstacles (~2.5s at 60fps)
+let framesSinceLastObstacle = 0;
+const minObstacleSpawnInterval = 60;    // minimum interval (~1s)
+const obstacleDifficultyTick = 900;     // every 900 frames (~15s) reduce interval
+let framesSinceDifficultyIncrease = 0;
+// ...existing code...
+
 function drawPlayer() {
   ctx.fillStyle = 'black';
   ctx.fillRect(player.x, player.y, player.width, player.height);
@@ -171,7 +179,21 @@ function gameLoop() {
   checkCollision();
 
   score++;
-  if (score % 150 === 0) createObstacle();
+
+  // obstacle spawn using a frame counter so interval can be adjusted over time
+  framesSinceLastObstacle++;
+  if (framesSinceLastObstacle >= obstacleSpawnInterval) {
+    createObstacle();
+    framesSinceLastObstacle = 0;
+  }
+
+  // gradually make obstacles spawn more frequently (but never below the min)
+  framesSinceDifficultyIncrease++;
+  if (framesSinceDifficultyIncrease >= obstacleDifficultyTick) {
+    obstacleSpawnInterval = Math.max(minObstacleSpawnInterval, obstacleSpawnInterval - 10);
+    framesSinceDifficultyIncrease = 0;
+  }
+
   if (score % 100 === 0) createWaterDrop();
   if (score % 1000 === 0) createJerrycan();
 
