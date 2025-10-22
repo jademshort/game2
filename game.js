@@ -19,8 +19,18 @@ function createObstacle() {
   obstacles.push({ x: canvas.width, y: canvas.height - height, width: 20, height });
 }
 
+// ...existing code...
 function createWaterDrop() {
-  let y = Math.random() * 200 + 150;
+  // compute ground and max rise from jump physics so drops spawn where the player can reach
+  const groundY = canvas.height - player.height;
+  const maxRise = (player.jumpPower * player.jumpPower) / (2 * player.gravity); // v^2 / (2g)
+  const topY = groundY - maxRise;
+
+  // add small buffers so drops aren't exactly at edges
+  const minY = Math.max(topY + 5, 50);            // don't spawn too close to top
+  const maxY = groundY - 10;                     // don't spawn below the ground
+
+  const y = Math.random() * (maxY - minY) + minY;
   waterDrops.push({ x: canvas.width, y, radius: 8 });
 }
 
