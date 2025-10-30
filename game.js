@@ -12,6 +12,27 @@ let waterCollected = 0;
 let gameSpeed = 4;
 let gameActive = false;
 
+// added: simple image loader
+const images = {};
+function preloadImages(map, cb) {
+  const keys = Object.keys(map);
+  if (keys.length === 0) { if (cb) cb(); return; }
+  let loaded = 0;
+  keys.forEach(k => {
+    images[k] = new Image();
+    images[k].src = map[k];
+    images[k].onload = () => { if (++loaded === keys.length && cb) cb(); };
+    images[k].onerror = () => { if (++loaded === keys.length && cb) cb(); };
+  });
+}
+
+// start preloading the jerrycan image (adjust path/name if needed)
+preloadImages({
+  jerrycan: 'assets/images/jerrycannnnnnnnnnnn.png'
+}, () => {
+  console.log('images preloaded');
+});
+
 // time / frame-delta helpers (added)
 let lastTimestamp = 0;
 let frameDelta = 1; // multiplier for per-frame updates (1 == 60FPS)
@@ -219,8 +240,15 @@ function updateJerrycans() {
   for (let i = 0; i < jerrycans.length; i++) {
     let jc = jerrycans[i];
     jc.x -= gameSpeed * frameDelta;
-    ctx.fillStyle = 'gold'; // yellow placeholder for charity: water jerrycan
-    ctx.fillRect(jc.x, jc.y, jc.width, jc.height);
+
+
+    // draw jerrycan image if loaded, otherwise fallback to placeholder
+    if (images.jerrycan && images.jerrycan.complete) {
+      ctx.drawImage(images.jerrycan, jc.x, jc.y, jc.width, jc.height);
+    } else {
+      ctx.fillStyle = 'gold'; // yellow placeholder for charity: water jerrycan
+      ctx.fillRect(jc.x, jc.y, jc.width, jc.height);
+    }
 
     if (jc.x + jc.width < 0) {
       jerrycans.splice(i, 1);
