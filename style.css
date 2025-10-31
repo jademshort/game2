@@ -4,11 +4,21 @@
   --brand-bg: #77a8bb;
 }
 
+/* ...existing code... */
+
+@font-face {
+  font-family: "Proxima Nova";
+  src: url("assets/fonts/proximanova_regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 body {
   margin: 0;
   background-color: var(--brand-bg); /* changed: match header/start/game-over background so nothing black peeks through */
   color: white;
-  font-family: Arial, sans-serif;
+  font-family: "Proxima Nova", "Avenir", Georgia, "Times New Roman", serif;
   text-align: center;
   padding-top: var(--header-height); /* reserve space for the logo header */
 }
