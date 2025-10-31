@@ -14,6 +14,12 @@
   font-display: swap;
 }
 
+html, body {
+  font-family: "Proxima Nova", "Avenir", Georgia, "Times New Roman", serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 body {
   margin: 0;
   background-color: var(--brand-bg); /* changed: match header/start/game-over background so nothing black peeks through */
@@ -231,7 +237,113 @@ button {
   display: inline-block;
 }
 
-/* ...existing code... */
+/* FOOTER + CREDITS STYLES */
+#siteFooter {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 110;               /* above game canvas, below header if needed */
+  background: transparent;    /* transparent background as requested */
+  color: #1a1a1a;
+  /* ensure Proxima Nova is used for footer */
+  font-family: "Proxima Nova", "Avenir", Georgia, "Times New Roman", serif;
+  padding: 12px 6vw;
+  box-sizing: border-box;
+  pointer-events: auto;
+  text-align: center; /* center fallback for any inline content */
+}
+
+#siteFooter .footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* center rows horizontally */
+  justify-content: center;
+  gap: 8px;
+}
+
+#siteFooter .footer-row {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center; /* center the links/rows */
+}
+
+/* primary charity row */
+#siteFooter .footer-primary a {
+  color: #1a1a1a;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* secondary links row */
+#siteFooter .footer-links {
+  margin-top: 6px;
+}
+
+#siteFooter .footer-links a,
+#siteFooter .link-button {
+  color: #1a1a1a;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+#siteFooter, .modal-content { font-family: "Proxima Nova", "Avenir", Georgia, "Times New Roman", serif; }
+
+/* CREDITS MODAL */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(0,0,0,0.45);
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 720px;
+  background: #ffffff;
+  color: #111;
+  border-radius: 8px;
+  padding: 20px 22px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.3);
+  position: relative;
+  font-family: "Proxima Nova", "ProximaNova", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.modal-close {
+  position: absolute;
+  right: 10px;
+  top: 6px;
+  font-size: 22px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* credits body */
+.credits-body { margin-top: 8px; color: #222; }
+.credits-body a { color: #0a66c2; text-decoration: underline; }
+
+/* ensure footer doesn't overlap critical UI on small screens — add bottom padding to game container */
+#gameCanvas { padding-bottom: 64px; } /* adjust if footer size changes */
+
+
+/* small-screen adjustments */
+@media (max-width: 640px) {
+  #siteFooter .footer-inner { padding-bottom: 8px; }
+  #siteFooter .footer-row { gap: 12px; }
+}
 
 /* smaller on narrow screens */
 @media (max-width: 480px) {

@@ -18,12 +18,6 @@
     <div class="title">Water Walk</div>
     <div class="subtitle">a game about the struggle for clean water</div>
     <button id="playButton">play</button>
-    <p style="margin-top: 20px;">
-      learn more at
-      <a href="https://charitywater.org" target="_blank" rel="noopener noreferrer">
-        charitywater.org
-      </a>
-    </p>
   </div>
 
   <!-- Game Canvas -->
@@ -38,11 +32,66 @@
     <p id="endScoreText"></p>
     <p id="finalScoreText"></p>
     <p id="gameOverNote">for millions of people, this walk isn't just a game. it's a daily struggle.</p>
-    <p>learn how you can help at <a href="https://charitywater.org" target="_blank">charitywater.org</a></p>
     <button id="replayButton">replay</button>
   </div>
 
   <script src="game.js"></script>
-  <!-- ...existing code... -->
+
+  <!-- SITE FOOTER (visible on all screens) -->
+  <footer id="siteFooter" aria-label="Site footer">
+    <div class="footer-inner">
+      <div class="footer-row footer-primary">
+        <a href="https://charitywater.org" target="_blank" rel="noopener noreferrer">learn more at charitywater.org</a>
+      </div>
+      <div class="footer-row footer-links" role="navigation" aria-label="Footer links">
+        <a href="https://www.linkedin.com/in/YOUR_PROFILE" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+        <a href="https://yourpersonalpage.example" target="_blank" rel="noopener noreferrer">Personal site</a>
+        <button id="creditsButton" class="link-button" type="button">Credits</button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- CREDITS MODAL -->
+  <div id="creditsModal" class="modal" role="dialog" aria-hidden="true" aria-labelledby="creditsTitle">
+    <div class="modal-content" role="document">
+      <button id="closeCredits" class="modal-close" aria-label="Close">×</button>
+      <h2 id="creditsTitle">Credits</h2>
+      <div class="credits-body">
+        <p>Assets and thanks:</p>
+        <ul>
+          <li>Bird sprite: <a href="#" target="_blank" rel="noopener noreferrer">author / source</a></li>
+          <li>Player sprites: <a href="#" target="_blank" rel="noopener noreferrer">author / source</a></li>
+          <li>Sound effects: <a href="#" target="_blank" rel="noopener noreferrer">author / source</a></li>
+        </ul>
+        <p>You can edit this content in <code>index.html</code>.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const creditsButton = document.getElementById('creditsButton');
+      const creditsModal = document.getElementById('creditsModal');
+      const closeCredits = document.getElementById('closeCredits');
+
+      function openModal() {
+        creditsModal.setAttribute('aria-hidden', 'false');
+        creditsModal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+      }
+      function closeModal() {
+        creditsModal.setAttribute('aria-hidden', 'true');
+        creditsModal.style.display = 'none';
+        document.body.style.overflow = '';
+      }
+
+      creditsButton && creditsButton.addEventListener('click', openModal);
+      closeCredits && closeCredits.addEventListener('click', closeModal);
+      creditsModal && creditsModal.addEventListener('click', (e) => {
+        if (e.target === creditsModal) closeModal();
+      });
+    }());
+  </script>
+
 </body>
 </html>
