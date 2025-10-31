@@ -1,6 +1,6 @@
 /* ...existing code... */
 :root {
-  --header-height: 72px; /* adjust this number to change header/logo spacing */
+  --header-height: 96px; /* adjust this number to change header/logo spacing */
   --brand-bg: #77a8bb;
 }
 
@@ -124,6 +124,27 @@ body {
   color: #002944;
 }
 
+#gameOverScreen button,
+#replayButton {
+  background-color: #ffc907; /* yellow button */
+  color: #1a1a1a;            /* dark label */
+  font-weight: 700;
+  border: none;
+  border-radius: 5px;
+  box-shadow: none;
+  padding: 10px 20px;
+  font-size: 1em;
+  cursor: pointer;
+}
+
+#gameOverScreen button:hover,
+#gameOverScreen button:focus,
+#replayButton:hover,
+#replayButton:focus {
+  filter: brightness(0.95);
+  outline: none;
+}
+
 /* ...existing code... */
 
 .title {
@@ -195,7 +216,7 @@ button {
   z-index: 100;
   box-sizing: border-box;
   pointer-events: none;     /* prevents header from stealing clicks; logo itself can accept events */
-  padding: 6px 0;    /* small vertical padding */
+  padding: 12px 0 8px 0;    /* small vertical padding */
   background-color: var(--brand-bg);
 }
 
@@ -203,8 +224,8 @@ button {
 #siteHeader img { pointer-events: auto; }
 
 #cwLogo {
-  max-width: 120px;
-  max-height: calc(var(--header-height) - 12px); /* ensure the image fits inside the header */
+  max-width: 160px;
+  max-height: calc(var(--header-height) - 18px); /* ensure the image fits inside the header */
   width: auto;
   height: auto;
   display: inline-block;
