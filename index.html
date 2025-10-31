@@ -8,14 +8,19 @@
   <!-- ...existing code... -->
 </head>
 <body>
+  <!-- added: shared header with logo -->
+  <div id="siteHeader">
+    <img id="cwLogo" src="assets/images/cwpng.png" alt="charity: water logo">
+  </div>
+
   <!-- Start Screen -->
   <div id="startScreen">
     <div class="title">Water Walk</div>
     <div class="subtitle">a game about the struggle for clean water</div>
     <button id="playButton">Play</button>
-    <p style="margin-top: 20px; color: #777;">
+    <p style="margin-top: 20px;">
       learn more at
-      <a href="https://charitywater.org" target="_blank" rel="noopener noreferrer" style="color: #4fc3f7;">
+      <a href="https://charitywater.org" target="_blank" rel="noopener noreferrer">
         charitywater.org
       </a>
     </p>
@@ -33,7 +38,7 @@
     <p id="endScoreText"></p>
     <p id="finalScoreText"></p>
     <p id="gameOverNote">For millions of people, this walk isn't just a game. It's a daily struggle.</p>
-    <p>Learn how you can help at <a href="https://charitywater.org" target="_blank" style="color: #4fc3f7;">charitywater.org</a></p>
+    <p>Learn how you can help at <a href="https://charitywater.org" target="_blank">charitywater.org</a></p>
     <button id="replayButton">Replay</button>
   </div>
 

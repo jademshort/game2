@@ -2,6 +2,23 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const scoreBoardEl = document.getElementById('scoreBoard'); // <-- add this line
+
+// add: consistent sky/ground colors pulled from CSS and a background draw helper
+const _rootStyle = getComputedStyle(document.documentElement);
+const skyColor = (_rootStyle.getPropertyValue('--brand-bg') || '#77a8bb').trim();
+const groundColor = '#1a1a1a'; // brand dark for ground (replace #111/#000)
+const groundHeight = 80; // adjust if your game draws ground at a different height
+
+function drawBackground() {
+  // sky
+  ctx.fillStyle = skyColor;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // ground (bottom strip where obstacles/player run)
+  ctx.fillStyle = groundColor;
+  ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
+}
+
 let player = { x: 50, y: 350, width: 30, height: 30, dy: 0, gravity: 0.5, jumpPower: -10, grounded: true };
 let obstacles = [];
 let waterDrops = [];
