@@ -476,25 +476,49 @@ function createAerialObstacle() {
   const groundY = canvas.height - groundHeight - player.height;
   const maxRise = (player.jumpPower * player.jumpPower) / (2 * player.gravity); // v^2/(2g)
 
-  // Spawn somewhere below the player's absolute max rise so the player can hit it.
-  // Ensure minY < maxY and stay above the ground.
-  const minY = Math.max(30, Math.floor(groundY - maxRise * 0.9));      // near the top of reachable area
-  const maxY = Math.max(minY + 24, groundY - 40);                      // ensure it's not too close to ceiling and reachable
-  let y = Math.random() * (maxY - minY) + minY;
+  // vertical spawn range (below max rise and above ground)
+  const minY = Math.max(30, Math.floor(groundY - maxRise * 0.9));
+  const maxY = Math.max(minY + 24, groundY - 40);
 
-  // spawn a bit ahead of screen with some horizontal variance
-  let x = canvas.width + 100 + Math.random() * 160;
-
-  // avoid spawning directly overlapping existing ground obstacles horizontally
+ 
+  // base spawn X (offscreen)
+  let spawnX = canvas.width + 100 + Math.random() * 160;
+ 
+  // enforce a minimum horizontal gap from any ground obstacle so player can clear ground obstacle first
+  const MIN_GAP = 140; // increased slightly; tweak as needed
   for (let i = 0; i < obstacles.length; i++) {
     const obs = obstacles[i];
-    const buffer = 40;
-    if (Math.abs(obs.x - x) < obs.width + buffer) {
-      x = obs.x + obs.width + 60;
+    if (Math.abs(obs.x - spawnX) < obs.width + MIN_GAP) {
+      spawnX = obs.x + obs.width + MIN_GAP + Math.random() * 60;
+    }
+  }
+  // safety loop: push until not overlapping ground obstacles (bounded iterations)
+  let safety = 0;
+  while (safety < 8) {
+    let overlapped = false;
+    for (let i = 0; i < obstacles.length; i++) {
+      const obs = obstacles[i];
+      if (spawnX < obs.x + obs.width + MIN_GAP && spawnX + width > obs.x - MIN_GAP) {
+        spawnX = obs.x + obs.width + MIN_GAP + Math.random() * 60;
+        overlapped = true;
+      }
+    }
+    if (!overlapped) break;
+    safety++;
+  }
+
+  // choose y; if it would collide vertically with a ground obstacle at same x, raise it
+  let y = Math.random() * (maxY - minY) + minY;
+  for (let i = 0; i < obstacles.length; i++) {
+    const obs = obstacles[i];
+    if (spawnX >= obs.x - 10 && spawnX <= obs.x + obs.width + 10) {
+      y = Math.min(y, obs.y - height - 12);
+      y = Math.max(y, minY);
     }
   }
 
-  aerialObstacles.push({ x, y, width, height });
+  // console.log('spawn bird', { x: spawnX, y, MIN_GAP }); // enable for debugging
+  aerialObstacles.push({ x: spawnX, y, width, height });
 }
 
 // ...existing code...
