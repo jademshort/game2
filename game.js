@@ -61,10 +61,155 @@ function preloadImages(map, cb) {
 // start preloading the jerrycan image (adjust path/name if needed)
 preloadImages({
   jerrycan: 'assets/images/jerrycannnnnnnnnnnn.png',
-  rock: 'assets/sprites/rock.png' /* added: single-cropped rock image for obstacles */
+  rock: 'assets/sprites/rock.png', /* added: single-cropped rock image for obstacles */
+  run: 'assets/sprites/run.png',   /* added: player running sheet */
+  jump: 'assets/sprites/jump.png'  /* added: player jumping sheet */
 }, () => {
   console.log('images preloaded');
+    // init player animations once images are available
+   initPlayerAnimations();
 });
+
+// --- PLAYER SPRITE / ANIMATION (replace black square with run/jump sheets) ---
+const playerSprite = {
+  runImg: null,
+  jumpImg: null,
+  frameW: 0,
+  frameH: 0,
+  runFrames: 0,
+  jumpFrames: 0,
+  animSpeed: 0.25,   // tweak: higher = faster animation
+  frameIndex: 0,
+  currentAnim: 'run' // 'run' or 'jump'
+};
+
+function detectFramesFromSheet(img) {
+  if (!img || !img.width || !img.height) return { frameH: 32, frames: [{ sx: 0, sw: 32 }] };
+
+  // Try transparency-based detection in a hidden canvas
+  try {
+    const oc = document.createElement('canvas');
+    oc.width = img.width;
+    oc.height = img.height;
+    const octx = oc.getContext('2d');
+    octx.drawImage(img, 0, 0);
+    const data = octx.getImageData(0, 0, oc.width, oc.height).data;
+    const cols = oc.width;
+    const rows = oc.height;
+    const alphaThreshold = 10; // treat <= this as transparent
+
+    const isTransparent = new Array(cols).fill(true);
+    for (let x = 0; x < cols; x++) {
+      let maxA = 0;
+      for (let y = 0; y < rows; y++) {
+        const a = data[(y * cols + x) * 4 + 3];
+        if (a > maxA) {
+          maxA = a;
+          if (maxA > alphaThreshold) break;
+        }
+      }
+      isTransparent[x] = maxA <= alphaThreshold;
+    }
+
+    // build non-transparent segments: contiguous columns where isTransparent is false
+    const segments = [];
+    let x = 0;
+    while (x < cols) {
+      if (!isTransparent[x]) {
+        const start = x;
+        while (x < cols && !isTransparent[x]) x++;
+        const sw = x - start;
+        segments.push({ sx: start, sw });
+      } else {
+        x++;
+      }
+    }
+
+    // If we found multiple segments, assume they are frames and return them
+    if (segments.length >= 2) {
+      return { frameH: rows, frames: segments };
+    }
+  } catch (err) {
+    console.warn('Transparent-frame detection failed, falling back to divisor method', err);
+  }
+
+  // Fallback: find a divisor-based frame width similar to previous approach,
+  // but return exact frame rects (no bleed).
+  const iw = img.width;
+  const ih = img.height;
+  for (let count = Math.min(20, Math.floor(iw / 8)); count >= 2; count--) {
+    if (iw % count === 0) {
+      const fw = iw / count;
+      if (Math.abs(fw - ih) <= ih * 0.6 || fw >= 16) {
+        const frames = [];
+        for (let i = 0; i < count; i++) frames.push({ sx: Math.round(i * fw), sw: Math.round(fw) });
+        return { frameH: ih, frames };
+      }
+    }
+  }
+
+  // Last resort: single full-width frame
+  return { frameH: ih, frames: [{ sx: 0, sw: iw }] };
+}
+
+function initPlayerAnimations() {
+  // set run image/frame data
+  if (images.run && !images.run.__failed) {
+    playerSprite.runImg = images.run;
+    const d = detectFramesFromSheet(images.run);
+    playerSprite.frameH = d.frameH;
+    playerSprite.runFramesData = d.frames;
+    playerSprite.runFrames = d.frames.length;
+    // If no frameW set yet, use first frame width
+    if (!playerSprite.frameW && d.frames.length) playerSprite.frameW = d.frames[0].sw;
+  }
+
+  // set jump image/frame data
+  if (images.jump && !images.jump.__failed) {
+    playerSprite.jumpImg = images.jump;
+    const d = detectFramesFromSheet(images.jump);
+    playerSprite.frameH = playerSprite.frameH || d.frameH;
+    playerSprite.jumpFramesData = d.frames;
+    playerSprite.jumpFrames = d.frames.length;
+    if (!playerSprite.frameW && d.frames.length) playerSprite.frameW = d.frames[0].sw;
+  }
+
+  // size the player to match sprite frames if possible
+  if (playerSprite.frameW && playerSprite.frameH) {
+    player.width = playerSprite.frameW;
+    player.height = playerSprite.frameH;
+    if (typeof canvas !== 'undefined' && canvas && canvas.height) {
+      player.y = canvas.height - player.height;
+    }
+  }
+
+  playerSprite.frameIndex = 0;
+  playerSprite.currentAnim = player.grounded ? 'run' : 'jump';
+}
+
+// Replace drawSheetFrame to use frame rect data (no sampling across frames)
+function drawSheetFrame(img, framesData, frameIndex, frameH, dx, dy, dw, dh) {
+  if (!img || img.__failed || !img.complete || !img.naturalWidth) {
+    ctx.fillStyle = 'black';
+    ctx.fillRect(dx, dy, dw, dh);
+    return;
+  }
+
+  const framesAcross = framesData.length || Math.max(1, Math.floor(img.width / (framesData[0]?.sw || dw)));
+  const fi = Math.floor(frameIndex) % framesAcross;
+  const frame = framesData[fi] || framesData[0];
+
+  const sx = Math.round(frame.sx);
+  const sy = 0;
+  const sw = Math.round(frame.sw);
+  const sh = Math.round(frameH);
+
+  // clamp to image bounds
+  const safeSx = Math.min(Math.max(0, sx), Math.max(0, img.width - sw));
+  ctx.drawImage(img, safeSx, sy, sw, sh, dx, dy, dw, dh);
+}
+
+
 
 preloadSounds({
   jump: 'assets/sounds/jump.wav'
@@ -125,8 +270,27 @@ let framesSinceLastAerial = 0;
 // ...existing code...
 
 function drawPlayer() {
-  ctx.fillStyle = 'black';
-  ctx.fillRect(player.x, player.y, player.width, player.height);
+  const anim = player.grounded ? 'run' : 'jump';
+  if (anim !== playerSprite.currentAnim) {
+    playerSprite.currentAnim = anim;
+    playerSprite.frameIndex = 0;
+  }
+
+  const img = anim === 'run' ? playerSprite.runImg : playerSprite.jumpImg;
+  const framesData = anim === 'run' ? playerSprite.runFramesData : playerSprite.jumpFramesData;
+  const frames = framesData ? framesData.length : 0;
+  const fh = playerSprite.frameH || player.height;
+
+  if (!img || frames <= 1 || !framesData) {
+    ctx.fillStyle = 'black';
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+    return;
+  }
+
+  playerSprite.frameIndex += playerSprite.animSpeed * frameDelta;
+  const dw = player.width;
+  const dh = player.height;
+  drawSheetFrame(img, framesData, playerSprite.frameIndex, fh, player.x, player.y, dw, dh);
 }
 
 function createObstacle() {
