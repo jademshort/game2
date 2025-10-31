@@ -51,15 +51,17 @@ function preloadImages(map, cb) {
   let loaded = 0;
   keys.forEach(k => {
     images[k] = new Image();
+    images[k].__failed = false;
+    images[k].onload = () => { images[k].__failed = false; if (++loaded === keys.length && cb) cb(); };
+    images[k].onerror = () => { images[k].__failed = true; console.warn('Image failed to load:', map[k]); if (++loaded === keys.length && cb) cb(); };
     images[k].src = map[k];
-    images[k].onload = () => { if (++loaded === keys.length && cb) cb(); };
-    images[k].onerror = () => { if (++loaded === keys.length && cb) cb(); };
   });
 }
 
 // start preloading the jerrycan image (adjust path/name if needed)
 preloadImages({
-  jerrycan: 'assets/images/jerrycannnnnnnnnnnn.png'
+  jerrycan: 'assets/images/jerrycannnnnnnnnnnn.png',
+  rock: 'assets/sprites/rock.png' /* added: single-cropped rock image for obstacles */
 }, () => {
   console.log('images preloaded');
 });
@@ -128,8 +130,11 @@ function drawPlayer() {
 }
 
 function createObstacle() {
-  let height = 30;
-  obstacles.push({ x: canvas.width, y: canvas.height - height, width: 20, height });
+  // default obstacle size (will be scaled when drawing)
+  const width = 48;
+  const height = 32;
+  const y = canvas.height - height;
+  obstacles.push({ x: canvas.width, y, width, height });
 }
 
 // added: create aerial obstacle (placeholder "bird")
@@ -230,9 +235,27 @@ function updateObstacles() {
   for (let i = 0; i < obstacles.length; i++) {
     let obs = obstacles[i];
     obs.x -= gameSpeed * frameDelta;
-    ctx.fillStyle = 'gray';
-    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-    if (obs.x + obs.width < 0) obstacles.splice(i, 1);
+
+    // draw rock image if loaded and not failed, otherwise fallback rectangle
+    if (images.rock && !images.rock.__failed && images.rock.complete && images.rock.naturalWidth) {
+      try {
+        ctx.drawImage(images.rock, obs.x, obs.y, obs.width, obs.height);
+      } catch (err) {
+        console.error('drawImage failed for rock, falling back to rect:', err);
+        ctx.fillStyle = 'gray';
+        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+        // mark as failed to avoid repeated errors
+        images.rock.__failed = true;
+      }
+    } else {
+      ctx.fillStyle = 'gray';
+      ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+    }
+
+    if (obs.x + obs.width < 0) {
+      obstacles.splice(i, 1);
+      i--;
+    }
   }
 }
 
