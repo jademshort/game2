@@ -9,6 +9,20 @@ const skyColor = (_rootStyle.getPropertyValue('--brand-bg') || '#77a8bb').trim()
 const groundColor = '#1a1a1a'; // brand dark for ground (replace #111/#000)
 const groundHeight = 80; // adjust if your game draws ground at a different height
 
+const sounds = {};
+function preloadSounds(map, cb) {
+  const keys = Object.keys(map);
+  if (keys.length === 0) { if (cb) cb(); return; }
+  let loaded = 0;
+  keys.forEach(k => {
+    sounds[k] = new Audio();
+    sounds[k].src = map[k];
+    // try to consider it loaded when playable through or on error
+    sounds[k].oncanplaythrough = () => { if (++loaded === keys.length && cb) cb(); };
+    sounds[k].onerror = () => { if (++loaded === keys.length && cb) cb(); };
+  });
+}
+
 function drawBackground() {
   // sky
   ctx.fillStyle = skyColor;
@@ -48,6 +62,23 @@ preloadImages({
   jerrycan: 'assets/images/jerrycannnnnnnnnnnn.png'
 }, () => {
   console.log('images preloaded');
+});
+
+preloadSounds({
+  jump: 'assets/sounds/jump.wav'
+}, () => console.log('sounds preloaded'));
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && player.grounded) {
+    player.dy = player.jumpPower;
+    player.grounded = false;
+    try {
+      if (sounds.jump) {
+        sounds.jump.currentTime = 0;
+        sounds.jump.play().catch(()=>{/* autoplay blocked */});
+      }
+    } catch (err) { /* ignore audio errors */ }
+  }
 });
 
 // time / frame-delta helpers (added)
