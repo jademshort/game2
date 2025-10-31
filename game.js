@@ -283,7 +283,8 @@ function drawBirdFrame(bird, dx, dy, dw, dh) {
 
 
 preloadSounds({
-  jump: 'assets/sounds/jump.wav'
+  jump: 'assets/sounds/jump.wav',
+  power_up: 'assets/sounds/power_up.wav',
 }, () => console.log('sounds preloaded'));
 
 document.addEventListener('keydown', e => {
@@ -586,6 +587,14 @@ function updateJerrycans() {
     // collision
     if (player.x < jc.x + jc.width && player.x + player.width > jc.x && player.y < jc.y + jc.height && player.y + player.height > jc.y) {
       waterCollected += 128; // 128 ounces = 1 gallon
+
+      // play power-up sound (safe try/catch to handle autoplay restrictions)
+      try {
+        if (sounds.power_up) {
+          sounds.power_up.currentTime = 0;
+          sounds.power_up.play().catch(()=>{});
+        }
+      } catch (err) { /* ignore audio errors */ }
 
       // activate score multiplier for a short duration
       activateMultiplier();
