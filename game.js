@@ -369,7 +369,7 @@ function createObstacle() {
   // default obstacle size (will be scaled when drawing)
   const width = 48;
   const height = 32;
-  const y = canvas.height - height;
+  const y = canvas.height - groundHeight - height; // place on top of visible ground
   obstacles.push({ x: canvas.width, y, width, height });
 }
 
@@ -378,14 +378,14 @@ function createAerialObstacle() {
   const width = 30;
   const height = 16;
 
-  // compute a y that is reachable by player when jumping
-  const groundY = canvas.height - player.height;
+  // top of player's feet on visible ground
+  const groundY = canvas.height - groundHeight - player.height;
   const maxRise = (player.jumpPower * player.jumpPower) / (2 * player.gravity); // v^2/(2g)
 
   // Spawn somewhere below the player's absolute max rise so the player can hit it.
-  // Make the range dynamic and safe (minY < maxY).
+  // Ensure minY < maxY and stay above the ground.
   const minY = Math.max(30, Math.floor(groundY - maxRise * 0.9));      // near the top of reachable area
-  const maxY = Math.max(minY + 24, groundY - 40);                      // ensure it's not too close to the ceiling and reachable
+  const maxY = Math.max(minY + 24, groundY - 40);                      // ensure it's not too close to ceiling and reachable
   let y = Math.random() * (maxY - minY) + minY;
 
   // spawn a bit ahead of screen with some horizontal variance
@@ -405,8 +405,8 @@ function createAerialObstacle() {
 
 // ...existing code...
 function createWaterDrop() {
-  // compute ground and max rise from jump physics so drops spawn where the player can reach
-  const groundY = canvas.height - player.height;
+  // compute top-of-ground and max rise from jump physics so drops spawn where the player can reach
+  const groundY = canvas.height - groundHeight - player.height;
   const maxRise = (player.jumpPower * player.jumpPower) / (2 * player.gravity); // v^2 / (2g)
   const topY = groundY - maxRise;
 
@@ -417,7 +417,7 @@ function createWaterDrop() {
   let y = Math.random() * (maxY - minY) + minY;
 
   // spawn items slightly ahead so they don't sit exactly where new obstacles spawn
-  let x = canvas.width + 80 + Math.random() * 80;
+  let x = canvas.width + 120 + Math.random() * 120;
 
   // if any existing obstacle would overlap this x, push the item further right until clear
   for (let i = 0; i < obstacles.length; i++) {
@@ -427,6 +427,7 @@ function createWaterDrop() {
       x = obs.x + obs.width + 40;
     }
   }
+
   // ensure the drop isn't exactly sitting on top of an obstacle at that x; if it would, move it slightly up
   for (let i = 0; i < obstacles.length; i++) {
     const obs = obstacles[i];
@@ -439,13 +440,14 @@ function createWaterDrop() {
 
   waterDrops.push({ x, y, radius: 8 });
 }
+
 function createJerrycan() {
     const width = 20;
     const height = 28;
 
-  // default near-ground spawn
+  // default near-ground spawn (on visible ground)
   let x = canvas.width + 100 + Math.random() * 120;
-  let y = canvas.height - height - 10;
+  let y = canvas.height - groundHeight - height - 10;
 
   // avoid spawning directly where obstacles are; push right if overlapping
   for (let i = 0; i < obstacles.length; i++) {
@@ -456,6 +458,7 @@ function createJerrycan() {
     }
   }
 
+
   // if spawn x would still land on an obstacle horizontally, try to place the jerrycan slightly above the obstacle top
   for (let i = 0; i < obstacles.length; i++) {
     const obs = obstacles[i];
@@ -463,6 +466,7 @@ function createJerrycan() {
       y = Math.max(30, obs.y - height - 6); // ensure not too high
     }
   }
+
 
   jerrycans.push({ x, y, width, height });
 }
@@ -607,8 +611,9 @@ function updateJerrycans() {
 
 function updatePlayer() {
   player.y += player.dy * frameDelta;
-  if (player.y + player.height >= canvas.height) {
-    player.y = canvas.height - player.height;
+   const groundY = canvas.height - groundHeight; // top of visible ground
+   if (player.y + player.height >= groundY) {
+     player.y = groundY - player.height;
     player.dy = 0;
     player.grounded = true;
   } else {
@@ -637,6 +642,10 @@ function gameLoop(timestamp) {
   lastTimestamp = timestamp;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // draw sky + visible ground first so obstacles/player render on top
+  if (typeof drawBackground === 'function') drawBackground();
+
 
   drawPlayer();
   updatePlayer();
@@ -711,7 +720,8 @@ document.getElementById('replayButton').onclick = () => {
 };
 
 function startGame() {
-  player.y = 350;
+  // position player on top of visible ground
+  player.y = (canvas && canvas.height ? canvas.height : 400) - groundHeight - player.height;
   score = 0;
   waterCollected = 0;
   obstacles = [];
