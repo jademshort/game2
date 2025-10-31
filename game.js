@@ -64,7 +64,8 @@ preloadImages({
   rock: 'assets/sprites/rock.png', /* added: single-cropped rock image for obstacles */
   run: 'assets/sprites/run.png',   /* added: player running sheet */
   jump: 'assets/sprites/jump.png',  /* added: player jumping sheet */
-  bird: 'assets/sprites/flying-creature-cycle.png' /* added: flying creature sheet (will be flipped) */
+  bird: 'assets/sprites/flying-creature-cycle.png', /* added: flying creature sheet (will be flipped) */
+  waterDrop: 'assets/sprites/onedrop.png' /* added: single water drop image */
 }, () => {
   console.log('images preloaded');
     // init player animations once images are available
@@ -524,10 +525,28 @@ function updateWaterDrops() {
   for (let i = 0; i < waterDrops.length; i++) {
     let drop = waterDrops[i];
     drop.x -= gameSpeed * frameDelta;
-    ctx.fillStyle = 'aqua';
-    ctx.beginPath();
-    ctx.arc(drop.x, drop.y, drop.radius, 0, Math.PI * 2);
-    ctx.fill();
+
+    // draw single-drop image if available, otherwise fallback to circle
+    if (images.waterDrop && !images.waterDrop.__failed && images.waterDrop.complete && images.waterDrop.naturalWidth) {
+      const dw = drop.radius * 2;
+      const dh = drop.radius * 2;
+      // draw centered on drop.x, drop.y
+      try {
+        ctx.drawImage(images.waterDrop, drop.x - drop.radius, drop.y - drop.radius, dw, dh);
+      } catch (err) {
+        // fallback to circle on any draw failure
+        ctx.fillStyle = 'aqua';
+        ctx.beginPath();
+        ctx.arc(drop.x, drop.y, drop.radius, 0, Math.PI * 2);
+        ctx.fill();
+        images.waterDrop.__failed = true;
+      }
+    } else {
+      ctx.fillStyle = 'aqua';
+      ctx.beginPath();
+      ctx.arc(drop.x, drop.y, drop.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }  
 
     if (drop.x < 0) {
       waterDrops.splice(i, 1);
