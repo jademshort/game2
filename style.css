@@ -274,9 +274,21 @@ button {
 
 /* primary charity row */
 #siteFooter .footer-primary a {
-  color: #1a1a1a;
+  color: inherit;
   font-weight: 700;
   text-decoration: none;
+}
+
+#siteFooter .footer-primary a .cw-domain {
+  color: #003366;             /* domain color */
+  text-decoration: underline; /* underline only the domain */
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 2px;
+}
+
+/* ensure contrast and clickable area remain obvious on hover */
+#siteFooter .footer-primary a:hover .cw-domain {
+  color: #001f3b;
 }
 
 /* secondary links row */
