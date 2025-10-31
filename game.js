@@ -63,11 +63,13 @@ preloadImages({
   jerrycan: 'assets/images/jerrycannnnnnnnnnnn.png',
   rock: 'assets/sprites/rock.png', /* added: single-cropped rock image for obstacles */
   run: 'assets/sprites/run.png',   /* added: player running sheet */
-  jump: 'assets/sprites/jump.png'  /* added: player jumping sheet */
+  jump: 'assets/sprites/jump.png',  /* added: player jumping sheet */
+  bird: 'assets/sprites/flying-creature-cycle.png' /* added: flying creature sheet (will be flipped) */
 }, () => {
   console.log('images preloaded');
     // init player animations once images are available
    initPlayerAnimations();
+   initBirdSprite();
 });
 
 // --- PLAYER SPRITE / ANIMATION (replace black square with run/jump sheets) ---
@@ -207,6 +209,74 @@ function drawSheetFrame(img, framesData, frameIndex, frameH, dx, dy, dw, dh) {
   // clamp to image bounds
   const safeSx = Math.min(Math.max(0, sx), Math.max(0, img.width - sw));
   ctx.drawImage(img, safeSx, sy, sw, sh, dx, dy, dw, dh);
+}
+
+// --- BIRD (aerial) sprite: flip sheet to face left and draw frames ---
+const birdSprite = {
+  img: null,
+  framesData: null,
+  frames: 0,
+  frameH: 0,
+  frameIndex: 0,
+  animSpeed: 0.18, // wing flap speed
+  flippedCanvas: null,
+  failed: false
+};
+
+function initBirdSprite() {
+  if (!images.bird || images.bird.__failed) {
+    birdSprite.failed = true;
+    return;
+  }
+  const img = images.bird;
+  birdSprite.img = img;
+
+  // detect frames (uses existing detectFramesFromSheet)
+  const d = detectFramesFromSheet(img);
+  birdSprite.framesData = d.frames;
+  birdSprite.frames = d.frames.length;
+  birdSprite.frameH = d.frameH || img.height;
+
+  // create an offscreen canvas and draw the sheet flipped horizontally
+  try {
+    const oc = document.createElement('canvas');
+    oc.width = img.width;
+    oc.height = img.height;
+    const octx = oc.getContext('2d');
+
+    octx.save();
+    octx.translate(oc.width, 0);
+    octx.scale(-1, 1);
+    octx.drawImage(img, 0, 0);
+    octx.restore();
+
+    birdSprite.flippedCanvas = oc;
+  } catch (err) {
+    console.warn('Could not create flipped bird canvas:', err);
+    birdSprite.failed = true;
+  }
+}
+
+// draw a single bird frame using the flipped sheet
+function drawBirdFrame(bird, dx, dy, dw, dh) {
+  if (!bird || bird.failed || !bird.flippedCanvas || !bird.framesData || bird.framesData.length === 0) {
+    ctx.fillStyle = 'maroon';
+    ctx.fillRect(dx, dy, dw, dh);
+    return;
+  }
+
+  bird.frameIndex += bird.animSpeed * frameDelta;
+  const fi = Math.floor(bird.frameIndex) % bird.frames;
+  const frame = bird.framesData[fi] || bird.framesData[0];
+
+  const sx = Math.round(frame.sx);
+  const sy = 0;
+  const sw = Math.round(frame.sw);
+  const sh = Math.round(bird.frameH);
+
+  // clamp to source bounds
+  const safeSx = Math.min(Math.max(0, sx), Math.max(0, bird.flippedCanvas.width - sw));
+  ctx.drawImage(bird.flippedCanvas, safeSx, sy, sw, sh, dx, dy, dw, dh);
 }
 
 
@@ -428,9 +498,12 @@ function updateAerialObstacles() {
   for (let i = 0; i < aerialObstacles.length; i++) {
     let a = aerialObstacles[i];
     a.x -= gameSpeed * frameDelta;
-    // placeholder bird: small dark-red rectangle (can replace with sprite later)
-    ctx.fillStyle = 'maroon';
-    ctx.fillRect(a.x, a.y, a.width, a.height);
+
+    // draw bird sprite (flipped to face left) if available
+    const drawW = a.width;
+    const drawH = a.height;
+    drawBirdFrame(birdSprite, a.x, a.y, drawW, drawH);
+
 
     if (a.x + a.width < 0) {
       aerialObstacles.splice(i, 1);
