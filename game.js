@@ -33,7 +33,13 @@ function drawBackground() {
   ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
 }
 
-let player = { x: 50, y: 350, width: 30, height: 30, dy: 0, gravity: 0.5, jumpPower: -10, grounded: true };
+let player = {
+  x: 50, y: 350, width: 30, height: 30,
+  dy: 0, gravity: 0.5, jumpPower: -10,
+  grounded: true,
+  maxJumps: 2,   // allow double-jump
+  jumps: 0       // jumps used since last grounded
+};
 let obstacles = [];
 let waterDrops = [];
 let jerrycans = [];
@@ -354,17 +360,38 @@ preloadSounds({
 }, () => console.log('sounds preloaded'));
 
 document.addEventListener('keydown', e => {
-  if (e.code === 'Space' && player.grounded) {
-    player.dy = player.jumpPower;
-    player.grounded = false;
-    try {
-      if (sounds.jump) {
-        sounds.jump.currentTime = 0;
-        sounds.jump.play().catch(()=>{/* autoplay blocked */});
-      }
-    } catch (err) { /* ignore audio errors */ }
+  if (e.code === 'Space') {
+    if (player.jumps < player.maxJumps) {
+      player.dy = player.jumpPower;
+      player.jumps += 1;
+      player.grounded = false;
+      try {
+        if (sounds.jump) {
+          sounds.jump.currentTime = 0;
+          sounds.jump.play().catch(()=>{/* autoplay blocked */});
+        }
+      } catch (err) {/* ignore */}
+    }
+    e.preventDefault();
   }
 });
+
+// add touch support for mobile: tap to jump / double-tap-in-air for double jump
+let lastTouchTime = 0;
+document.addEventListener('touchstart', (ev) => {
+  const now = Date.now();
+  // basic debounce to avoid accidental multi-fire
+  if (now - lastTouchTime < 50) return;
+  lastTouchTime = now;
+
+  if (player.jumps < player.maxJumps) {
+    player.dy = player.jumpPower;
+    player.jumps += 1;
+    player.grounded = false;
+  }
+  ev.preventDefault();
+}, { passive: false });
+
 
 // time / frame-delta helpers (added)
 let lastTimestamp = 0;
@@ -467,57 +494,44 @@ function createObstacle() {
   obstacles.push({ x: spawnX, y, width, height });
 }
 
+// tune: minimum frames after an obstacle before an aerial can spawn
+const MIN_FRAMES_AFTER_OBSTACLE_FOR_AERIAL = 140; // ~2.3s at 60fps, tweak as needed
+
+
 // added: create aerial obstacle (placeholder "bird")
 function createAerialObstacle() {
   const width = 30;
   const height = 16;
 
-  // top of player's feet on visible ground
   const groundY = canvas.height - groundHeight - player.height;
-  const maxRise = (player.jumpPower * player.jumpPower) / (2 * player.gravity); // v^2/(2g)
+  const maxRise = (player.jumpPower * player.jumpPower) / (2 * player.gravity);
 
-  // vertical spawn range (below max rise and above ground)
   const minY = Math.max(30, Math.floor(groundY - maxRise * 0.9));
   const maxY = Math.max(minY + 24, groundY - 40);
 
- 
-  // base spawn X (offscreen)
-  let spawnX = canvas.width + 100 + Math.random() * 160;
- 
-  // enforce a minimum horizontal gap from any ground obstacle so player can clear ground obstacle first
-  const MIN_GAP = 140; // increased slightly; tweak as needed
-  for (let i = 0; i < obstacles.length; i++) {
-    const obs = obstacles[i];
-    if (Math.abs(obs.x - spawnX) < obs.width + MIN_GAP) {
-      spawnX = obs.x + obs.width + MIN_GAP + Math.random() * 60;
-    }
-  }
-  // safety loop: push until not overlapping ground obstacles (bounded iterations)
-  let safety = 0;
-  while (safety < 8) {
-    let overlapped = false;
-    for (let i = 0; i < obstacles.length; i++) {
-      const obs = obstacles[i];
-      if (spawnX < obs.x + obs.width + MIN_GAP && spawnX + width > obs.x - MIN_GAP) {
-        spawnX = obs.x + obs.width + MIN_GAP + Math.random() * 60;
-        overlapped = true;
-      }
-    }
-    if (!overlapped) break;
-    safety++;
+  const baseX = canvas.width + 100;
+  const MAX_OFFSCREEN = canvas.width + 800;
+  const MIN_GAP = 260; // larger safety gap
+
+  // start spawnX to the right of screen
+  let spawnX = baseX + Math.random() * 160;
+
+  // if there is at least one obstacle, force spawnX to be to the right of the latest obstacle + gap
+  if (obstacles.length > 0) {
+    const lastObs = obstacles[obstacles.length - 1];
+    spawnX = Math.max(spawnX, lastObs.x + lastObs.width + MIN_GAP);
   }
 
-  // choose y; if it would collide vertically with a ground obstacle at same x, raise it
+  // extra safety: ensure spawnX is to the right of all obstacles (use max requirement)
+  for (let i = 0; i < obstacles.length; i++) {
+    const obs = obstacles[i];
+    spawnX = Math.max(spawnX, obs.x + obs.width + MIN_GAP);
+  }
+  // choose y and clamp
   let y = Math.random() * (maxY - minY) + minY;
-  for (let i = 0; i < obstacles.length; i++) {
-    const obs = obstacles[i];
-    if (spawnX >= obs.x - 10 && spawnX <= obs.x + obs.width + 10) {
-      y = Math.min(y, obs.y - height - 12);
-      y = Math.max(y, minY);
-    }
-  }
+  spawnX = Math.min(spawnX, MAX_OFFSCREEN);
+  y = Math.min(Math.max(y, minY), maxY);
 
-  // console.log('spawn bird', { x: spawnX, y, MIN_GAP }); // enable for debugging
   aerialObstacles.push({ x: spawnX, y, width, height });
 }
 
@@ -632,6 +646,26 @@ function updateAerialObstacles() {
     let a = aerialObstacles[i];
     a.x -= gameSpeed * frameDelta;
 
+    // check overlaps with ground obstacles; try to fix by nudging up or shifting right
+    const buffer = 6;
+    for (let j = 0; j < obstacles.length; j++) {
+      const obs = obstacles[j];
+      const horizOverlap = (a.x < obs.x + obs.width) && (a.x + a.width > obs.x);
+      if (horizOverlap) {
+        const desiredY = obs.y - a.height - buffer;
+        // if we can move bird above obstacle without exceeding minY, do it
+        const groundY = canvas.height - groundHeight - player.height;
+        const maxRise = (player.jumpPower * player.jumpPower) / (2 * player.gravity);
+        const minY = Math.max(30, Math.floor(groundY - maxRise * 0.9));
+        if (desiredY >= minY) {
+          a.y = Math.min(a.y, desiredY);
+        } else {
+          // can't move up; shift bird right to avoid overlap
+          a.x = obs.x + obs.width + Math.max(120, Math.round(player.width * 2));
+        }
+      }
+    }
+
     // draw bird sprite (flipped to face left) if available
     const drawW = a.width;
     const drawH = a.height;
@@ -644,7 +678,7 @@ function updateAerialObstacles() {
       continue;
     }
 
-    // collision check with player (rectangle collision)
+    // collision check
     if (player.x < a.x + a.width && player.x + player.width > a.x &&
         player.y < a.y + a.height && player.y + player.height > a.y) {
       gameOver();
@@ -743,10 +777,14 @@ function updatePlayer() {
      player.y = groundY - player.height;
     player.dy = 0;
     player.grounded = true;
+    player.jumps = 0; // reset jump count on landing
   } else {
     player.dy += player.gravity * frameDelta;
+    player.grounded = false;
   }
 }
+
+
 
 function checkCollision() {
   for (let obs of obstacles) {
@@ -798,10 +836,17 @@ function gameLoop(timestamp) {
 
   // aerial spawn (less frequent than boulders, more frequent than jerrycans)
   framesSinceLastAerial += frameDelta;
-  if (framesSinceLastAerial >= aerialSpawnInterval) {
-    createAerialObstacle();
-    framesSinceLastAerial = 0;
-  }  
+   if (framesSinceLastAerial >= aerialSpawnInterval) {
+     // allow spawn if enough frames passed since last obstacle OR
+     // if the most recent obstacle has moved far enough left from the right edge
+     const lastObs = obstacles.length ? obstacles[obstacles.length - 1] : null;
+     const SAFE_AHEAD = 220; // pixels of horizontal free space on right to allow safe aerial spawn
+     const lastObsCleared = !lastObs || (lastObs.x + lastObs.width) < (canvas.width - SAFE_AHEAD);
+     if (framesSinceLastObstacle > MIN_FRAMES_AFTER_OBSTACLE_FOR_AERIAL || lastObsCleared) {
+       createAerialObstacle();
+       framesSinceLastAerial = 0;
+     }
+   }
 
   // gradually make obstacles spawn more frequently (but never below the min)
   framesSinceDifficultyIncrease += frameDelta;
@@ -818,12 +863,6 @@ function gameLoop(timestamp) {
   requestAnimationFrame(gameLoop);
 }
 
-document.addEventListener('keydown', e => {
-  if (e.code === 'Space' && player.grounded) {
-    player.dy = player.jumpPower;
-    player.grounded = false;
-  }
-});
 
 function gameOver() {
   gameActive = false;
@@ -848,7 +887,11 @@ document.getElementById('replayButton').onclick = () => {
 
 function startGame() {
   // position player on top of visible ground
+  player.x = 50;
   player.y = (canvas && canvas.height ? canvas.height : 400) - groundHeight - player.height;
+  player.jumps = 0;
+  player.grounded = true;
+
   score = 0;
   waterCollected = 0;
   obstacles = [];
