@@ -280,6 +280,72 @@ function drawBirdFrame(bird, dx, dy, dw, dh) {
   ctx.drawImage(bird.flippedCanvas, safeSx, sy, sw, sh, dx, dy, dw, dh);
 }
 
+// helper: compute visible (non-transparent) rect for an Image and cache result on the image
+function analyzeImageVisibleBounds(img) {
+  if (!img || !img.complete || img.__failed) return null;
+  if (img.__bounds) return img.__bounds;
+
+  try {
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
+    const oc = document.createElement('canvas');
+    oc.width = w;
+    oc.height = h;
+    const octx = oc.getContext('2d');
+    octx.drawImage(img, 0, 0);
+    const data = octx.getImageData(0, 0, w, h).data;
+
+    let top = 0;
+    let bottom = h - 1;
+    let left = 0;
+    let right = w - 1;
+    const alphaThreshold = 10;
+
+    // find top
+    let found = false;
+    for (let y = 0; y < h && !found; y++) {
+      for (let x = 0; x < w; x++) {
+        if (data[(y * w + x) * 4 + 3] > alphaThreshold) { top = y; found = true; break; }
+      }
+    }
+    // find bottom
+    found = false;
+    for (let y = h - 1; y >= 0 && !found; y--) {
+      for (let x = 0; x < w; x++) {
+        if (data[(y * w + x) * 4 + 3] > alphaThreshold) { bottom = y; found = true; break; }
+      }
+    }
+    // find left
+    found = false;
+    for (let x = 0; x < w && !found; x++) {
+      for (let y = 0; y < h; y++) {
+        if (data[(y * w + x) * 4 + 3] > alphaThreshold) { left = x; found = true; break; }
+      }
+    }
+    // find right
+    found = false;
+    for (let x = w - 1; x >= 0 && !found; x--) {
+      for (let y = 0; y < h; y++) {
+        if (data[(y * w + x) * 4 + 3] > alphaThreshold) { right = x; found = true; break; }
+      }
+    }
+
+    const bounds = {
+      sx: left,
+      sy: top,
+      sw: Math.max(1, right - left + 1),
+      sh: Math.max(1, bottom - top + 1),
+      iw: w,
+      ih: h
+    };
+    img.__bounds = bounds;
+    return bounds;
+  } catch (e) {
+    console.warn('analyzeImageVisibleBounds failed', e);
+    return null;
+  }
+}
+
 
 
 preloadSounds({
@@ -366,11 +432,39 @@ function drawPlayer() {
 }
 
 function createObstacle() {
-  // default obstacle size (will be scaled when drawing)
+  // default visual width we'd like obstacles to appear at
+  const desiredWidth = 48;
+
+  // if we have a rock image, compute visible bounds and size the obstacle to the visible content
+  if (images.rock && !images.rock.__failed && images.rock.complete && images.rock.naturalWidth) {
+    const b = analyzeImageVisibleBounds(images.rock);
+    if (b) {
+      const scale = desiredWidth / b.sw;
+      const width = Math.round(b.sw * scale);
+      const height = Math.round(b.sh * scale);
+      const y = canvas.height - groundHeight - height; // align visible bottom to ground
+      const spawnX = canvas.width + 120 + Math.random() * 120;
+      obstacles.push({
+        x: spawnX,
+        y,
+        width,
+        height,
+        // store source rect so we draw only the visible portion (avoids padding)
+        sx: b.sx,
+        sy: b.sy,
+        sw: b.sw,
+        sh: b.sh
+      });
+      return;
+    }
+  }
+
+  // fallback when no image bounds: box obstacle
   const width = 48;
   const height = 32;
   const y = canvas.height - groundHeight - height; // place on top of visible ground
-  obstacles.push({ x: canvas.width, y, width, height });
+  const spawnX = canvas.width + 120 + Math.random() * 120;
+  obstacles.push({ x: spawnX, y, width, height });
 }
 
 // added: create aerial obstacle (placeholder "bird")
@@ -476,15 +570,24 @@ function updateObstacles() {
     let obs = obstacles[i];
     obs.x -= gameSpeed * frameDelta;
 
-    // draw rock image if loaded and not failed, otherwise fallback rectangle
-    if (images.rock && !images.rock.__failed && images.rock.complete && images.rock.naturalWidth) {
+    // draw rock using source rect if present (aligns visible bottom to ground)
+    if (images.rock && !images.rock.__failed && images.rock.complete && images.rock.naturalWidth && obs.sx !== undefined) {
+      try {
+        ctx.drawImage(images.rock, obs.sx, obs.sy, obs.sw, obs.sh, obs.x, obs.y, obs.width, obs.height);
+      } catch (err) {
+        console.error('drawImage failed for rock (with src rect), falling back to rect:', err);
+        ctx.fillStyle = 'gray';
+        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+        images.rock.__failed = true;
+      }
+    } else if (images.rock && !images.rock.__failed && images.rock.complete && images.rock.naturalWidth) {
+      // no src rect available — draw the full image scaled to obstacle box
       try {
         ctx.drawImage(images.rock, obs.x, obs.y, obs.width, obs.height);
       } catch (err) {
         console.error('drawImage failed for rock, falling back to rect:', err);
         ctx.fillStyle = 'gray';
         ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-        // mark as failed to avoid repeated errors
         images.rock.__failed = true;
       }
     } else {
