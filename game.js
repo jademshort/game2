@@ -895,18 +895,24 @@ function gameLoop(timestamp) {
 
 
 function gameOver() {
+  console.log('GAME OVER triggered');
   gameActive = false;
   const gameCanvasEl = document.getElementById('gameCanvas');
   const gameOverEl = document.getElementById('gameOverScreen');
 
   if (gameCanvasEl) gameCanvasEl.style.display = 'none';
-  if (gameOverEl) gameOverEl.style.display = 'flex';
+  if (gameOverEl) {
+    // make visible and set aria attribute so CSS rule (#gameOverScreen[aria-hidden="false"]) applies
+    gameOverEl.style.display = 'flex';
+    gameOverEl.setAttribute('aria-hidden', 'false');
+    gameOverEl.style.zIndex = 950;
+  }
 
   const endScoreEl = document.getElementById('endScoreText');
   const finalScoreEl = document.getElementById('finalScoreText');
 
-  if (endScoreEl) endScoreEl.textContent = `Score: ${Math.floor(score)}`;
-  if (finalScoreEl) finalScoreEl.textContent = `You collected ${waterCollected} ounces of water!`;
+  if (endScoreEl) endScoreEl.textContent = `score: ${Math.floor(score)}`;
+  if (finalScoreEl) finalScoreEl.textContent = `you collected ${waterCollected} ounces of water!`;
 }
 
 // update startGame to accept mode param and call applyDifficultySettings
@@ -988,14 +994,6 @@ document.addEventListener('DOMContentLoaded', () => {
       startWithMode('normal');
     });
   }
-  const replayBtn = document.getElementById('replayButton');
-  if (replayBtn) {
-    replayBtn.addEventListener('click', () => {
-      document.getElementById('gameOverScreen').style.display = 'none';
-      document.getElementById('gameCanvas').style.display = 'block';
-      startGame(currentDifficulty);
-    });
-  }
 
   // now that canvas exists, initialize any sprite sizing that relied on it
   if (images.run || images.jump) {
@@ -1003,6 +1001,32 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if (images.bird) {
     try { initBirdSprite(); } catch (e) { /* ignore if images not ready */ }
+  }
+
+  const backBtn = document.getElementById('backToStartButton');
+  if (backBtn) {
+    backBtn.addEventListener('click', () => {
+      const gameOverEl = document.getElementById('gameOverScreen');
+      const startEl = document.getElementById('startScreen');
+      if (gameOverEl) {
+        gameOverEl.setAttribute('aria-hidden', 'true');
+        gameOverEl.style.display = 'none';
+      }
+      if (startEl) startEl.style.display = 'flex';
+    });
+  }
+  // ensure Replay uses current difficulty and hides the card properly
+  const replayBtn = document.getElementById('replayButton');
+  if (replayBtn) {
+    replayBtn.addEventListener('click', () => {
+      const gameOverEl = document.getElementById('gameOverScreen');
+      if (gameOverEl) {
+        gameOverEl.setAttribute('aria-hidden', 'true');
+        gameOverEl.style.display = 'none';
+      }
+      document.getElementById('gameCanvas').style.display = 'block';
+      startGame(currentDifficulty);
+    });
   }
 });
 

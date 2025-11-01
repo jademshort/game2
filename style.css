@@ -222,6 +222,94 @@ body {
 #gameOverScreen {
   /* make the default text color dark */
   color: #1a1a1a;
+  position: fixed;
+  inset: 0;
+  display: none;               /* toggled by JS */
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+  z-index: 950;
+}
+
+/* card */
+.game-over-card {
+  width: min(720px, 92%);
+  background: rgba(255,255,255,0.98);
+  color: #1a1a1a;
+  border-radius: 12px;
+  padding: 28px 28px;
+  box-shadow: 0 12px 40px rgba(15,15,15,0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: center;
+  font-family: "Proxima Nova", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  transform: translateY(-6px);
+  opacity: 0;
+  transition: opacity 240ms ease, transform 240ms ease;
+}
+
+/* show state helper (set when opening) */
+#gameOverScreen[aria-hidden="false"] .game-over-card {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* title / stats */
+.game-over-title {
+  font-size: 3.2rem;
+  margin: 0;
+  letter-spacing: -0.02em;
+  text-transform: lowercase;
+  font-weight: 800;
+  color: #1a1a1a;
+}
+
+.game-over-body { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+
+.game-over-stat {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  color: #003366; /* subtle emphasis color */
+}
+
+.game-over-note {
+  font-size: 0.98rem;
+  color: #333;
+  margin: 6px 0 0 0;
+  max-width: 84%;
+}
+
+/* actions — match start screen button style, centered */
+.game-over-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+/* button variants */
+.btn.primary {
+  background: #ffc907;
+  color: #111;
+  border: none;
+  padding: 12px 22px;
+  border-radius: 8px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: "Proxima Nova", inherit;
+}
+
+.btn.ghost {
+  background: transparent;
+  color: #1a1a1a;
+  border: 2px solid rgba(26,26,26,0.08);
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  font-family: "Proxima Nova", inherit;
 }
 
 /* ensure headings and paragraphs on the game over screen use the dark color */
@@ -498,6 +586,11 @@ button {
     width: 40%;
     margin-top: 6px;
   }
+  .game-over-card { padding: 18px; }
+  .game-over-title { font-size: 2rem; }
+  .game-over-stat { font-size: 1rem; }
+  .btn.primary, .btn.ghost { padding: 10px 14px; font-size: 0.95rem; }
+
 
   #startScreen .title { font-size: 2.2rem; }
   #startScreen .subtitle { font-size: 1.1rem; }

@@ -16,7 +16,7 @@
   <!-- START SCREEN -->
   <main id="startScreen" role="main" aria-labelledby="gameTitle">
     <div class="content">
-      <h1 id="gameTitle" class="title">Water Walk</h1>
+      <h1 id="gameTitle" class="title">water walk</h1>
       <p class="subtitle">a game about the struggle for clean water</p>
 
       <!-- Play: opens difficulty selector -->
@@ -42,13 +42,19 @@
     <canvas id="game" width="800" height="400"></canvas>
   </div>
 
-  <!-- GAME OVER -->
-  <div id="gameOverScreen" style="display:none;">
-    <h2>GAME OVER</h2>
-    <p id="endScoreText"></p>
-    <p id="finalScoreText"></p>
-    <p id="gameOverNote">for millions of people, this walk isn't just a game. it's a daily struggle.</p>
-    <button id="replayButton" class="btn">replay (same difficulty)</button>
+  <div id="gameOverScreen" aria-hidden="true">
+    <div class="game-over-card" role="dialog" aria-labelledby="gameOverTitle">
+      <h2 id="gameOverTitle" class="game-over-title">game over</h2>
+      <div class="game-over-body">
+        <p id="endScoreText" class="game-over-stat">score: 0</p>
+        <p id="finalScoreText" class="game-over-stat">water: 0 oz</p>
+        <p class="game-over-note">for millions of people, this walk isn't just a game — it's a daily struggle.</p>
+      </div>
+      <div class="game-over-actions">
+        <button id="replayButton" class="btn primary">replay</button>
+        <button id="backToStartButton" class="btn ghost">back to start</button>
+      </div>
+    </div>
   </div>
 
   <script src="game.js"></script>
