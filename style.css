@@ -156,7 +156,7 @@ body {
 }
 
 #startScreen > .content {
-  margin-top: 18vh;
+  margin-top: 12vh;
   width: 46%;
   max-width: 720px;
   display: flex;
@@ -520,14 +520,24 @@ button {
   inset: 0;
   z-index: 120;
   background: rgba(0,0,0,0.45);
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+/* when aria-hidden is false (modal opened), force a centered flex layout */
+.modal[aria-hidden="false"] {
+  display: flex !important;
   align-items: center;
   justify-content: center;
-  padding: 32px;
+  padding: 24px;
 }
 
 .modal-content {
   width: 100%;
   max-width: 720px;
+  margin: 0 auto;
+  max-height: calc(100vh - 96px);
+  overflow: auto;
   background: #ffffff;
   color: #111;
   border-radius: 8px;
