@@ -454,6 +454,24 @@ button {
   pointer-events: none; /* not interactive */
 }
 
+/* ensure gameplay instructions use Proxima Nova */
+#gameInstructions,
+#gameInstructions p {
+  font-family: "Proxima Nova", "Avenir", Georgia, "Times New Roman", serif;
+  font-weight: 600;
+}
+
+/* ensure game over card text uses Proxima Nova */
+.game-over-card,
+.game-over-title,
+.game-over-body,
+.game-over-note,
+.game-over-stat,
+.game-over-actions,
+.game-over-actions .btn {
+  font-family: "Proxima Nova", "Avenir", Georgia, "Times New Roman", serif;
+}
+
 /* FOOTER + CREDITS STYLES */
 #siteFooter {
   position: fixed;
