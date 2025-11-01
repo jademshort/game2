@@ -102,6 +102,68 @@ body {
   color: #002944;
 }
 
+#startScreen > .content {
+  /* ensure content is a left-aligned column and positioned where the page padding puts it */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  width: 46%;
+  max-width: 720px;
+  margin-top: 18px;
+  box-sizing: border-box;
+  padding: 0; /* don't let child elements escape the column */
+}
+
+/* action area: don't force full-width (stay inside the .content column) */
+#startScreen > .content .start-actions {
+  display: flex;
+  justify-content: flex-start; /* keep buttons starting at same left edge as text */
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 0 0;
+  padding: 0;
+  width: auto; /* important: don't expand to viewport width */
+  box-sizing: border-box;
+}
+
+/* difficulty selector sits below the button and aligns with the content */
+#startScreen > .content #difficultySelector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+
+
+/* make the difficulty button group not expand beyond content */
+#difficultySelector > div {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+
+
+/* ensure Play/difficulty buttons use Proxima Nova and match site button styling */
+#startScreen .btn,
+#startScreen .start-actions .btn,
+#startScreen #difficultySelector .btn,
+#startScreen #btnNormal,
+#startScreen #btnHard,
+#startScreen #btnExtreme,
+#startScreen #playButton {
+  font-family: "Proxima Nova", "Avenir", Georgia, "Times New Roman", serif;
+  font-weight: 700;
+  display: inline-block;
+  margin: 0;
+  padding: 10px 20px;
+}
+
 /* game over screen color overrides */
 #gameOverScreen {
   /* make the default text color dark */
@@ -350,6 +412,16 @@ button {
 /* ensure footer doesn't overlap critical UI on small screens — add bottom padding to game container */
 #gameCanvas { padding-bottom: 64px; } /* adjust if footer size changes */
 
+/* small responsive tweak so buttons follow text width on narrow screens */
+@media (max-width: 768px) {
+  #startScreen > .content {
+    width: 86%;
+  }
+  #startScreen > .content .start-actions,
+  #startScreen > .content #difficultySelector {
+    width: 100%;
+  }
+}
 
 /* small-screen adjustments */
 @media (max-width: 640px) {

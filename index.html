@@ -13,26 +13,42 @@
     <img id="cwLogo" src="assets/images/cwpng.png" alt="charity: water logo">
   </div>
 
-  <!-- Start Screen -->
-  <div id="startScreen">
-    <div class="title">Water Walk</div>
-    <div class="subtitle">a game about the struggle for clean water</div>
-    <button id="playButton">play</button>
-  </div>
+  <!-- START SCREEN -->
+  <main id="startScreen" role="main" aria-labelledby="gameTitle">
+    <div class="content">
+      <h1 id="gameTitle" class="title">Water Walk</h1>
+      <p class="subtitle">a game about the struggle for clean water</p>
+
+      <!-- Play: opens difficulty selector -->
+      <div class="start-actions">
+        <button id="playButton" class="btn">Play</button>
+      </div>
+
+      <!-- Difficulty selector (hidden by default) -->
+      <div id="difficultySelector" class="difficulty" style="display:none; margin-top:12px;">
+        <p style="margin:0 0 8px 0;font-weight:600;">Choose difficulty</p>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <button id="btnNormal" class="btn">Normal</button>
+          <button id="btnHard" class="btn">Hard</button>
+          <button id="btnExtreme" class="btn">Extreme</button>
+        </div>
+      </div>
+    </div>
+  </main>
 
   <!-- Game Canvas -->
-  <div id="gameCanvas">
+  <div id="gameCanvas" style="display:none;">
     <div id="scoreBoard">Score: 0 | Water: 0</div>
     <canvas id="game" width="800" height="400"></canvas>
   </div>
 
-  <!-- Game Over Screen -->
+  <!-- GAME OVER -->
   <div id="gameOverScreen" style="display:none;">
-    <h1>GAME OVER</h1>
+    <h2>GAME OVER</h2>
     <p id="endScoreText"></p>
     <p id="finalScoreText"></p>
     <p id="gameOverNote">for millions of people, this walk isn't just a game. it's a daily struggle.</p>
-    <button id="replayButton">replay</button>
+    <button id="replayButton" class="btn">replay (same difficulty)</button>
   </div>
 
   <script src="game.js"></script>

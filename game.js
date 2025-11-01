@@ -1,13 +1,43 @@
-// ...existing code...
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-const scoreBoardEl = document.getElementById('scoreBoard'); // <-- add this line
-
+let canvas;
+let ctx;
+let scoreBoardEl;
 // add: consistent sky/ground colors pulled from CSS and a background draw helper
 const _rootStyle = getComputedStyle(document.documentElement);
 const skyColor = (_rootStyle.getPropertyValue('--brand-bg') || '#77a8bb').trim();
 const groundColor = '#1a1a1a'; // brand dark for ground (replace #111/#000)
 const groundHeight = 80; // adjust if your game draws ground at a different height
+
+// add difficulty state (default normal)
+let currentDifficulty = 'normal';
+
+// apply difficulty tuning (call at start of game)
+function applyDifficultySettings(mode) {
+  currentDifficulty = mode || 'normal';
+
+  if (mode === 'normal') {
+    gameSpeed = 4;
+    obstacleSpawnInterval = 150;
+    aerialSpawnInterval = 600;
+    // keep default water/jerrycan frequencies
+  } else if (mode === 'hard') {
+    gameSpeed = 5;                  // faster
+    obstacleSpawnInterval = 120;    // more frequent obstacles
+    aerialSpawnInterval = 450;      // more frequent birds
+  } else if (mode === 'extreme') {
+    gameSpeed = 6.25;               // much faster
+    obstacleSpawnInterval = 90;     // very frequent obstacles
+    aerialSpawnInterval = 360;      // frequent birds
+  } else {
+      // fallback safe defaults
+    gameSpeed = 4;
+    obstacleSpawnInterval = 150;
+    aerialSpawnInterval = 600;
+  }
+  // reset frame counters so the first spawns follow the chosen pacing
+  framesSinceLastObstacle = 0;
+  framesSinceLastAerial = 0;
+  framesSinceDifficultyIncrease = 0;
+}
 
 const sounds = {};
 function preloadSounds(map, cb) {
@@ -866,26 +896,24 @@ function gameLoop(timestamp) {
 
 function gameOver() {
   gameActive = false;
-  document.getElementById('gameCanvas').style.display = 'none';
-  document.getElementById('gameOverScreen').style.display = 'flex';
+  const gameCanvasEl = document.getElementById('gameCanvas');
+  const gameOverEl = document.getElementById('gameOverScreen');
 
-  document.getElementById('endScoreText').textContent = `Score: ${Math.floor(score)}`;
-  document.getElementById('finalScoreText').textContent = `You collected ${waterCollected} ounces of water!`;
+  if (gameCanvasEl) gameCanvasEl.style.display = 'none';
+  if (gameOverEl) gameOverEl.style.display = 'flex';
+
+  const endScoreEl = document.getElementById('endScoreText');
+  const finalScoreEl = document.getElementById('finalScoreText');
+
+  if (endScoreEl) endScoreEl.textContent = `Score: ${Math.floor(score)}`;
+  if (finalScoreEl) finalScoreEl.textContent = `You collected ${waterCollected} ounces of water!`;
 }
 
-document.getElementById('playButton').onclick = () => {
-  document.getElementById('startScreen').style.display = 'none';
-  document.getElementById('gameCanvas').style.display = 'block';
-  startGame();
-};
+// update startGame to accept mode param and call applyDifficultySettings
+function startGame(mode) {
+  // apply difficulty settings first (mode optional)
+  applyDifficultySettings(mode || currentDifficulty);
 
-document.getElementById('replayButton').onclick = () => {
-  document.getElementById('gameOverScreen').style.display = 'none';
-  document.getElementById('gameCanvas').style.display = 'block';
-  startGame();
-};
-
-function startGame() {
   // position player on top of visible ground
   player.x = 50;
   player.y = (canvas && canvas.height ? canvas.height : 400) - groundHeight - player.height;
@@ -907,12 +935,76 @@ function startGame() {
   scoreMultiplier = 1;
   multiplierExpires = 0;
 
-  obstacleSpawnInterval = 150;
-
   lastTimestamp = 0;
   frameDelta = 1;
 
   gameActive = true;
   requestAnimationFrame(gameLoop);
 }
+
+// wire start / replay / difficulty buttons after DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  // assign canvas/ctx and scoreboard now DOM is available
+  canvas = document.getElementById('game');
+  if (!canvas) {
+    console.error('Canvas #game not found in DOM.');
+    return;
+  }
+  ctx = canvas.getContext('2d');
+  scoreBoardEl = document.getElementById('scoreBoard') || document.createElement('div');
+
+
+  const playBtn = document.getElementById('playButton');
+  const diffBox = document.getElementById('difficultySelector');
+  const btnNormal = document.getElementById('btnNormal');
+  const btnHard = document.getElementById('btnHard');
+  const btnExtreme = document.getElementById('btnExtreme');
+
+  // toggle difficulty selector when Play clicked
+  if (playBtn && diffBox) {
+    playBtn.addEventListener('click', () => {
+      diffBox.style.display = (diffBox.style.display === 'block') ? 'none' : 'block';
+    });
+  }
+
+  // helper to hide start screen, show game canvas and start with mode
+  function startWithMode(mode) {
+    const ss = document.getElementById('startScreen');
+    const gc = document.getElementById('gameCanvas');
+    if (ss) ss.style.display = 'none';
+    if (gc) gc.style.display = 'block';
+    if (typeof startGame === 'function') startGame(mode);
+  }
+
+  if (btnNormal)  btnNormal.addEventListener('click', () => startWithMode('normal'));
+  if (btnHard)    btnHard.addEventListener('click', () => startWithMode('hard'));
+  if (btnExtreme) btnExtreme.addEventListener('click', () => startWithMode('extreme'));
+
+  // wire replay/play fallbacks that were previously top-level
+  const playButtonFallback = document.getElementById('playButton');
+  if (playButtonFallback && !btnNormal && !btnHard && !btnExtreme) {
+    // if no difficulty UI exists, start normal directly
+    playButtonFallback.addEventListener('click', () => {
+      startWithMode('normal');
+    });
+  }
+  const replayBtn = document.getElementById('replayButton');
+  if (replayBtn) {
+    replayBtn.addEventListener('click', () => {
+      document.getElementById('gameOverScreen').style.display = 'none';
+      document.getElementById('gameCanvas').style.display = 'block';
+      startGame(currentDifficulty);
+    });
+  }
+
+  // now that canvas exists, initialize any sprite sizing that relied on it
+  if (images.run || images.jump) {
+    try { initPlayerAnimations(); } catch (e) { /* ignore if images not ready */ }
+  }
+  if (images.bird) {
+    try { initBirdSprite(); } catch (e) { /* ignore if images not ready */ }
+  }
+});
+
+
 // ...existing code...
