@@ -37,10 +37,18 @@
   </main>
 
   <!-- Game Canvas -->
-  <div id="gameCanvas" style="display:none;">
-    <div id="scoreBoard">Score: 0 | Water: 0</div>
-    <canvas id="game" width="800" height="400"></canvas>
-  </div>
+   <section id="gameCanvas" style="display:none;">
+    <div id="scoreBoard" role="status" aria-live="polite">
+      <span id="scoreValue">Score: 0</span>
+      <span id="waterValue">Water: 0 oz</span>
+    </div>
+    <canvas id="game" width="900" height="420"></canvas>
+
+    <!-- gameplay instructions (appears under the canvas, above the footer) -->
+    <div id="gameInstructions" class="game-instructions" aria-hidden="false">
+      <p><strong>how to play:</strong> press Space (or tap) to jump. double-tap to double jump. avoid rocks and birds. collect water and jerrycans to earn points.</p>
+    </div>
+  </section>
 
   <div id="gameOverScreen" aria-hidden="true">
     <div class="game-over-card" role="dialog" aria-labelledby="gameOverTitle">
