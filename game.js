@@ -387,6 +387,7 @@ function analyzeImageVisibleBounds(img) {
 preloadSounds({
   jump: 'assets/sounds/jump.wav',
   power_up: 'assets/sounds/power_up.wav',
+  coin: 'assets/sounds/coin.wav'
 }, () => console.log('sounds preloaded'));
 
 document.addEventListener('keydown', e => {
@@ -753,6 +754,15 @@ function updateWaterDrops() {
     // collision (droplet -> 8 ounces)
     if (drop.x < player.x + player.width && drop.x + drop.radius > player.x && drop.y > player.y && drop.y < player.y + player.height) {
       waterCollected += 8; // 8 ounces per droplet
+
+      // play coin sound (safe try/catch for autoplay restrictions)
+      try {
+        if (sounds.coin) {
+          sounds.coin.currentTime = 0;
+          sounds.coin.play().catch(()=>{});
+        }
+      } catch (err) { /* ignore audio errors */ }
+
       waterDrops.splice(i, 1);
       i--;
     }
