@@ -595,6 +595,34 @@ button {
 /* ensure footer doesn't overlap critical UI on small screens — add bottom padding to game container */
 #gameCanvas { padding-bottom: 64px; } /* adjust if footer size changes */
 
+/* Responsive image + footer + instructions tweaks */
+@media (max-width: 1000px) {
+  /* make right-side photo noticeably smaller */
+  #startScreen {
+    background-size: auto 36% !important;   /* smaller image */
+    background-position: right 30% !important; /* nudge image a bit up */
+    padding-right: 14vw; /* give slightly less reserved space */
+    padding-left: 9vw;
+  }
+
+  /* slightly reduce footer size/spacing */
+  #siteFooter {
+    padding: 8px 4vw !important;
+    font-size: 0.95rem;
+  }
+  #siteFooter .footer-inner { gap: 6px; }
+
+  /* shrink instruction text a bit */
+  .game-instructions {
+    font-size: 0.95rem;
+    margin: 10px auto 14px auto;
+    padding: 4px 10px;
+  }
+
+  /* minor reduction in modal content max-height for mid-size screens */
+  .modal-content { max-height: calc(100vh - 120px); }
+}
+
 /* responsive downscaling for smaller viewports */
 @media (max-width: 900px) {
   #startScreen .title { font-size: 3.2rem; }
@@ -612,6 +640,34 @@ button {
   #startScreen > .content #difficultySelector {
     width: 100%;
   }
+
+  /* remove right-side photo entirely on narrow screens */
+  #startScreen {
+    background-image: none !important;
+    padding-right: 6vw; /* reclaim space */
+    padding-left: 6vw;
+  }
+
+  /* make footer compact on very small screens */
+  #siteFooter {
+    padding: 6px 3vw !important;
+    font-size: 0.85rem !important;
+  }
+  #siteFooter .footer-inner { gap: 6px; }
+
+  /* further reduce instructions */
+  .game-instructions {
+    font-size: 0.82rem;
+    margin: 8px auto 12px auto;
+    padding: 3px 8px;
+  }
+
+  /* reduce start screen title/subtitle scale so layout fits */
+  #startScreen .title { font-size: 2.6rem; }
+  #startScreen .subtitle { font-size: 1.05rem; }
+
+  /* ensure game canvas bottom padding still accounts for the smaller footer */
+  #gameCanvas { padding-bottom: 54px; }
 }
 
 /* small-screen adjustments */
